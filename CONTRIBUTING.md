@@ -48,7 +48,8 @@ Students edit these files, so after `01-strategy` no branch may change them — 
 - `tests/TrainingApp.Checks/MyFeature.cs`
 
 Students also own everything under `src/TrainingApp.Api/Features/` that is not a built-in feature
-(`StandardDelivery`, `ExpressDelivery`, `PickupDelivery`).
+(`StandardDelivery`, `ExpressDelivery`, `PickupDelivery`). From `05-testing` on, the same applies to the feature folders
+students add to the test projects.
 
 Also keep stable the API that student code compiles against:
 
