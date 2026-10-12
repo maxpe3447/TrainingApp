@@ -1,0 +1,9 @@
+# Build context of src/TrainingApp.Api/Dockerfile is the repository root: send only what the build needs.
+**/bin/
+**/obj/
+.git/
+.vs/
+.idea/
+monitoring/
+tests/
+tasks/

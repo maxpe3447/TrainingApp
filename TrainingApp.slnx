@@ -4,5 +4,8 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/TrainingApp.Checks/TrainingApp.Checks.csproj" />
+    <Project Path="tests/TrainingApp.E2ETests/TrainingApp.E2ETests.csproj" />
+    <Project Path="tests/TrainingApp.IntegrationTests/TrainingApp.IntegrationTests.csproj" />
+    <Project Path="tests/TrainingApp.UnitTests/TrainingApp.UnitTests.csproj" />
   </Folder>
 </Solution>
