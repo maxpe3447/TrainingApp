@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: trainingapp
+    metrics_path: /metrics
+    static_configs:
+      # TrainingApp.Api running locally (dotnet run, "http" profile).
+      - targets: ["host.docker.internal:5161"]
+    metric_relabel_configs:
+      # Command metric names are per command (standard_delivery_command_total, ...);
+      # copy the command part into a "command" label so dashboards can group by it.
+      - source_labels: [__name__]
+        regex: "(.+_command)_(total|in_progress|duration_seconds_(bucket|sum|count)|value_(bucket|sum|count))"
+        target_label: command
+        replacement: "$1"
