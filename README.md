@@ -81,7 +81,8 @@ as long as you follow these rules:
 2. **Shared files you are allowed to edit** — the course branches never change them after `01-strategy`:
    - `src/TrainingApp.Api/Common/DeliveryType.cs` — append your delivery type;
    - `tests/TrainingApp.Checks/MyFeature.cs` — tell the checks how to call your endpoint.
-3. **Everything else belongs to the course:** `Program.cs`, `Common/`, `Behaviors/`, `Telemetry/`, built-in features,
+3. **Tests of your feature** (step 05) go to folders of your own, e.g. `tests/TrainingApp.UnitTests/Features/<YourFeature>/`.
+4. **Everything else belongs to the course:** `Program.cs`, `Common/`, `Behaviors/`, `Telemetry/`, built-in features,
    `monitoring/`, `tests/`, project files. Read them, learn from them, but do not edit them.
    Strategies, handlers, validators and controllers are discovered automatically, so you never need to touch `Program.cs`.
 
