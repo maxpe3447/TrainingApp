@@ -1,0 +1,39 @@
+@host = http://localhost:5161
+
+### Standard delivery
+POST {{host}}/api/delivery/standard
+Content-Type: application/json
+
+{ "weightKg": 5, "distanceKm": 800, "isFragile": true }
+
+### Express delivery
+POST {{host}}/api/delivery/express
+Content-Type: application/json
+
+{ "weightKg": 2.5, "distanceKm": 300, "isFragile": true, "declaredValue": 1500 }
+
+### Express not available (> 10 kg) -> 400
+POST {{host}}/api/delivery/express
+Content-Type: application/json
+
+{ "weightKg": 12, "distanceKm": 300, "isFragile": false, "declaredValue": 0 }
+
+### Pickup
+POST {{host}}/api/delivery/pickup
+Content-Type: application/json
+
+{ "pickupPointId": "KYIV-02", "weightKg": 3 }
+
+### Unknown pickup point -> 400
+POST {{host}}/api/delivery/pickup
+Content-Type: application/json
+
+{ "pickupPointId": "ODESA-99", "weightKg": 3 }
+
+### Field validation errors -> 400
+POST {{host}}/api/delivery/standard
+Content-Type: application/json
+
+{ "weightKg": -1, "distanceKm": 0, "isFragile": false }
+
+# Put the requests for your own feature into a separate .http file in your feature folder.
