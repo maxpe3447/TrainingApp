@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: trainingapp
+    folder: TrainingApp
+    type: file
+    disableDeletion: true
+    options:
+      # Every *.json here becomes a dashboard, including the ones you export into this folder.
+      path: /var/lib/grafana/dashboards
