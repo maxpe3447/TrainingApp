@@ -60,7 +60,7 @@
     {
       "id": 3,
       "type": "timeseries",
-      "title": "Command duration (p50 / p95)",
+      "title": "Command duration (p50 / p95) · exemplars open traces",
       "gridPos": { "x": 0, "y": 9, "w": 12, "h": 9 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
@@ -68,7 +68,8 @@
         {
           "refId": "A",
           "expr": "histogram_quantile(0.95, sum by (command, le) (rate({__name__=~\".+_command_duration_seconds_bucket\", command=~\"$command\"}[$__rate_interval])))",
-          "legendFormat": "{{command}} · p95"
+          "legendFormat": "{{command}} · p95",
+          "exemplar": true
         },
         {
           "refId": "B",

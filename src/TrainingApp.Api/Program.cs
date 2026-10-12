@@ -3,6 +3,7 @@ using FluentValidation;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -15,13 +16,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Logging: two providers behind the same ILogger<T>.
 //   Serilog       → console: readable text in Development, one JSON object per line elsewhere;
-//   OpenTelemetry → OTLP → otel-collector → Loki (see monitoring/).
+//   OpenTelemetry → OTLP → otel-collector → Loki (see monitoring/); each record carries the trace_id of the current span.
 // Levels per provider come from appsettings: Logging:Serilog:LogLevel and Logging:LogLevel.
 builder.Logging.ClearProviders();
 var consoleLogger = new LoggerConfiguration().MinimumLevel.Verbose();
 consoleLogger = builder.Environment.IsDevelopment()
     ? consoleLogger.WriteTo.Console(
         outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext}: {Message:lj} {TraceId}{NewLine}{Exception}")
+    // One JSON object per line; @tr/@sp carry trace_id/span_id.
     : consoleLogger.WriteTo.Console(new CompactJsonFormatter());
 builder.Logging.AddSerilog(consoleLogger.CreateLogger(), dispose: true);
 
@@ -37,7 +39,17 @@ builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics => metrics
         .AddMeter(AppTelemetry.MeterName)
         .AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel", "System.Runtime")
+        // Exemplars: a histogram measurement recorded inside a sampled span keeps its trace_id,
+        // so a point on a latency graph opens the very trace that produced it.
+        .SetExemplarFilter(ExemplarFilterType.TraceBased)
         .AddPrometheusExporter())
+    // Traces are pushed: OTLP → otel-collector → Tempo.
+    .WithTracing(tracing => tracing
+        .AddSource(AppTelemetry.ActivitySourceName)
+        // The root span of every HTTP request; it also continues a trace from an incoming traceparent header.
+        .AddAspNetCoreInstrumentation(options =>
+            options.Filter = context => !context.Request.Path.StartsWithSegments("/metrics"))
+        .AddOtlpExporter())
     .WithLogging(
         logging => logging.AddOtlpExporter(),
         options =>
@@ -59,10 +71,12 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDeliveryStrategies(typeof(Program).Assembly);
 
 // Handlers and validators are discovered in this assembly as well: a new feature needs no registration here.
-// Behaviors run in the order they are added: logging and metrics wrap validation, so rejected commands are seen too.
+// Behaviors run in the order they are added: tracing comes first, so the logs and metrics of the others
+// are recorded inside the command span; all of them wrap validation, so rejected commands are seen too.
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining<Program>();
+    cfg.AddOpenBehavior(typeof(TracingBehavior<,>));
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
     cfg.AddOpenBehavior(typeof(MetricsBehavior<,>));
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));

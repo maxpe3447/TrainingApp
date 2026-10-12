@@ -1,5 +1,5 @@
 # Single OTLP entry point for the app: it pushes every signal to one endpoint,
-# and the collector routes each signal to its backend. For now: logs to Loki.
+# and the collector routes traces to Tempo and logs to Loki.
 receivers:
   otlp:
     protocols:
@@ -12,6 +12,8 @@ processors:
   batch: {}
 
 exporters:
+  otlphttp/tempo:
+    endpoint: http://tempo:4318
   # Loki's native OTLP endpoint; the exporter appends /v1/logs.
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
@@ -21,6 +23,10 @@ service:
     logs:
       level: warn
   pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/tempo]
     logs:
       receivers: [otlp]
       processors: [batch]
