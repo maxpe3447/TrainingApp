@@ -1,0 +1,147 @@
+{
+  "uid": "trainingapp-metrics",
+  "title": "TrainingApp — Metrics",
+  "tags": ["trainingapp"],
+  "links": [
+    { "type": "dashboards", "tags": ["trainingapp"], "asDropdown": false, "includeVars": false, "keepTime": true, "title": "TrainingApp" }
+  ],
+  "timezone": "browser",
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "schemaVersion": 39,
+  "editable": true,
+  "templating": {
+    "list": [
+      {
+        "name": "command",
+        "label": "Command",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": { "query": "label_values({job=\"trainingapp\"}, command)", "refId": "command" },
+        "definition": "label_values({job=\"trainingapp\"}, command)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true,
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Commands per second by outcome",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (command, outcome) (rate({__name__=~\".+_command_total\", command=~\"$command\"}[$__rate_interval]))",
+          "legendFormat": "{{command}} · {{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Commands in progress",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (command) ({__name__=~\".+_command_in_progress\", command=~\"$command\"})",
+          "legendFormat": "{{command}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Command duration (p50 / p95)",
+      "gridPos": { "x": 0, "y": 9, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (command, le) (rate({__name__=~\".+_command_duration_seconds_bucket\", command=~\"$command\"}[$__rate_interval])))",
+          "legendFormat": "{{command}} · p95"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.5, sum by (command, le) (rate({__name__=~\".+_command_duration_seconds_bucket\", command=~\"$command\"}[$__rate_interval])))",
+          "legendFormat": "{{command}} · p50"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Average recorded value (quote cost)",
+      "gridPos": { "x": 12, "y": 9, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (command) (rate({__name__=~\".+_command_value_sum\", command=~\"$command\"}[$__rate_interval])) / sum by (command) (rate({__name__=~\".+_command_value_count\", command=~\"$command\"}[$__rate_interval]))",
+          "legendFormat": "{{command}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Business metric example · express refusals per minute by reason",
+      "description": "Recorded by ExpressDeliveryStrategy: a reason no generic behavior could know.",
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } } }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (reason) (increase(express_delivery_refusals_total{job=\"trainingapp\"}[1m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Business metric example · express declared value (p50 / p95)",
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(express_delivery_declared_value_bucket{job=\"trainingapp\"}[$__rate_interval])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(express_delivery_declared_value_bucket{job=\"trainingapp\"}[$__rate_interval])))",
+          "legendFormat": "p50"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "HTTP requests per second by route and status",
+      "gridPos": { "x": 0, "y": 27, "w": 24, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (http_route, http_response_status_code) (rate(http_server_request_duration_seconds_count{job=\"trainingapp\"}[$__rate_interval]))",
+          "legendFormat": "{{http_route}} · {{http_response_status_code}}"
+        }
+      ]
+    }
+  ]
+}
