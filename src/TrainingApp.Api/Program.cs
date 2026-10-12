@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FluentValidation;
 using OpenTelemetry.Logs;
+using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using Scalar.AspNetCore;
 using Serilog;
@@ -24,11 +25,19 @@ consoleLogger = builder.Environment.IsDevelopment()
     : consoleLogger.WriteTo.Console(new CompactJsonFormatter());
 builder.Logging.AddSerilog(consoleLogger.CreateLogger(), dispose: true);
 
+// Technical metrics of every command: IAppMetrics<TCommand> names them after the command type in snake_case.
+builder.Services.AddSingleton(typeof(IAppMetrics<>), typeof(AppMetrics<>));
+
 // The OTLP endpoint is read from OTEL_EXPORTER_OTLP_ENDPOINT (appsettings.json or an environment variable).
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => resource
         .AddService(AppTelemetry.ServiceName)
         .AddAttributes([new("deployment.environment.name", builder.Environment.EnvironmentName)]))
+    // Metrics are pulled: Prometheus scrapes GET /metrics (see monitoring/prometheus/prometheus.yml).
+    .WithMetrics(metrics => metrics
+        .AddMeter(AppTelemetry.MeterName)
+        .AddMeter("Microsoft.AspNetCore.Hosting", "Microsoft.AspNetCore.Server.Kestrel", "System.Runtime")
+        .AddPrometheusExporter())
     .WithLogging(
         logging => logging.AddOtlpExporter(),
         options =>
@@ -50,11 +59,12 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDeliveryStrategies(typeof(Program).Assembly);
 
 // Handlers and validators are discovered in this assembly as well: a new feature needs no registration here.
-// Behaviors run in the order they are added: logging wraps validation, so rejected commands are logged too.
+// Behaviors run in the order they are added: logging and metrics wrap validation, so rejected commands are seen too.
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssemblyContaining<Program>();
     cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
+    cfg.AddOpenBehavior(typeof(MetricsBehavior<,>));
     cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
 });
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -75,6 +85,8 @@ if (app.Environment.IsDevelopment())
         options.DisableMcp();
     });
 }
+
+app.MapPrometheusScrapingEndpoint();
 
 app.MapControllers();
 
